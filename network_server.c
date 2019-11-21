@@ -66,6 +66,7 @@ CONFIG_t cfg;
 int server_open(void)
 {
 	int sock = 0;
+	struct linger optval;
 	struct sockaddr_in serv_addr;
 	struct timeval tv;
 	char *serverip;
@@ -75,7 +76,7 @@ int server_open(void)
 	int rlisten = 0;
 	int port = 0;
 	int size = SERVERBUFMAX;
-	//char *dev = "eth0";       //serport & center connection
+	char *dev = "wlan0";       //serport & center connection
 
 	if(skmib._main == 1){
 		port = cfg.maindeviceport;
@@ -86,7 +87,9 @@ int server_open(void)
 	sock = socket(PF_INET,SOCK_STREAM,0);
 	if(sock>=0)
 	{
-		/*
+		optval.l_onoff = 1;
+		optval.l_linger = 10;
+		setsockopt(sock,SOL_SOCKET,SO_LINGER,(char*)&optval,sizeof(optval));
 		setsockopt(sock,SOL_SOCKET,SO_SNDBUF,&size,sizeof(int));
 		setsockopt(sock,SOL_SOCKET,SO_RCVBUF,&size,sizeof(int));
 		memset(&tv,0,sizeof(tv));
@@ -95,9 +98,10 @@ int server_open(void)
 		setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(char*)&tv,sizeof(tv));
 		tv.tv_usec = SERVERSENDTIMEOUT;
 		setsockopt(sock,SOL_SOCKET,SO_SNDTIMEO,(char *)&tv,sizeof(tv));
+		setsockopt(sock,SOL_SOCKET,SO_BINDTODEVICE,(char*)&dev,strlen(dev));
 		setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(char*)&option,sizeof(option));//for bind -1 error
 		setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(char*)&keepalive,sizeof(keepalive));//for bind -1 error
-*/
+
 		//port = SERVERPORT;
 
 		memset(&serv_addr,0,sizeof(serv_addr));

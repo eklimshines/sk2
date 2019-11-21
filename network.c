@@ -4,6 +4,7 @@ uint32_t service_uuid_int[] = { 0, 0, 0, 0xABCD };
 
 SKMIB_t skmib;
 CHECK_t auth[8];
+AUTH_t auth2;
 
 unsigned char* enc_auth_to_main(int* len){
 	unsigned char* data = NULL;
@@ -273,18 +274,18 @@ void parse_neighborList(unsigned char* data){
 	int i = 0, j = 0;
 	int neighborLen = -1;
 
-	int dev_num = -1;
-	int macLen = -1;
-	int uuidLen = -1;
-	int nameLen = -1;
-	int DaLen = -1;
+	int dev_num = 0;
+	int macLen = 0;
+	int uuidLen = 0;
+	int nameLen = 0;
+	int DaLen = 0;
 	int paramLen = -1;
 
-	unsigned char *param;
-	unsigned char *mac;
-	unsigned char *uuid;
-	unsigned char *name;
-	unsigned char *_Da;
+	unsigned char* param = NULL;
+	unsigned char* _mac = NULL;
+	unsigned char* _uuid = NULL;
+	unsigned char* _name = NULL;
+	unsigned char* _Da = NULL;
 
 	printf("Parse neighbor List\n");
 
@@ -303,34 +304,54 @@ void parse_neighborList(unsigned char* data){
 	if(neighborLen < 0) printf("Parse List NeighborLen Error!!!\n");
 	
 	printf("neighborLen: %d \n", neighborLen);
-/*
+	
+	auth2.cnt_neighbor = neighborLen;
+	//auth2.cnt_auth = neighborLen;
+	auth2.cnt_auth = 1;
+
 	for(j = 0; j < neighborLen; j++){
 		dev_num = data[i++];
+		printf("dev_num:%d \n",dev_num);
+		auth[j].devId = dev_num;
 
 		macLen = data[i++];
-		mac = (unsigned char *)malloc(macLen);
-		memcpy(mac, &data[i], macLen);
-		mac[macLen] = '\0';
+		printf("macLen:%d \n",macLen);
+		_mac = (unsigned char*)malloc(macLen);
+		memset(_mac, 0, macLen);
+		memcpy(_mac, &data[i], macLen);
+		//_mac[macLen] = '\0';
+		//memcpy(auth[j].MAC, &data[i], macLen);
+		memcpy(auth[j].MAC, _mac, macLen);
 		i += macLen;
-
+	
 		uuidLen = data[i++];
-		uuid = (unsigned char *)malloc(uuidLen);
-		memcpy(uuid, &data[i], uuidLen);
-		uuid[uuidLen] = '\0';
+		printf("uuidLen:%d \n",uuidLen);
+		_uuid = (unsigned char*) malloc (uuidLen);
+		memset(_uuid, 0, uuidLen);
+		memcpy(_uuid, &data[i], uuidLen);
+		//_uuid[uuidLen] = '\0';
+		//memcpy(auth[j].UUID, &data[i], uuidLen);
+		memcpy(auth[j].UUID, _uuid, uuidLen);
 		i+= uuidLen;
-
+/*
 		nameLen = data[i++];
-		name = (unsigned char *)malloc(nameLen);
-		memcpy(name, &data[i], nameLen);
-		name[nameLen] = '\0';
-		i+= nameLen;
+		printf("nameLen:%d \n",nameLen);
+		if(nameLen >0){
+			_name = (unsigned char*)malloc(nameLen);
+			memset(_name, 0, nameLen);
+			memcpy(_name, &data[i], nameLen);
+			//_name[nameLen] = '\0';
+			i+= nameLen;
+		}
 
 		DaLen = data[i++];
-		_Da = (unsigned char *)malloc(DaLen);
+		printf("DaLen:%d \n",DaLen);
+		_Da = (unsigned char*)malloc(DaLen);
+		memset(_Da, 0, DaLen);
 		memcpy(_Da, &data[i], DaLen);
-		_Da[DaLen] = '\0';
+		//_Da[DaLen] = '\0';
 		i+= DaLen;
-
+*/
 		//printf_byte(mac, macLen);
 		//printf_byte(uuid, uuidLen);
 		//printf_byte(name, nameLen);
@@ -338,15 +359,27 @@ void parse_neighborList(unsigned char* data){
 
 		//printf("NList dev:%02d mac[%d]: %s, uuid[%d]: %s, name[%d]:%s, Da[%d]: %s\n",dev_num, macLen,  mac,uuidLen, uuid, nameLen, name, DaLen, _Da);
 
-		printf("Neighbor get Dev:%02d mac[%d] uuid[%d] name[%d] Da[%d]\n", dev_num, macLen, uuidLen, nameLen, DaLen);
+		//insert_neighbor(dev_num, _mac, _uuid, _name);
+		//insert_neighbor(dev_num, mac, uuid, uuid);
 		
-		insert_neighbor(dev_num, mac, uuid, name);
+		printf("Neighbor get Dev:%02d mac[%d]:%s uuid[%d]:%s name[%d] Da[%d]\n", dev_num, macLen,_mac, uuidLen,_uuid, nameLen, DaLen);
 
-		free(mac);
-		free(uuid);
-		free(name);
+		free(_mac);
+		free(_uuid);
+		free(_name);
 		free(_Da);
-	}*/
+
+		macLen = 0;
+		uuidLen = 0;
+		nameLen = 0;
+		DaLen = 0;
+
+		_mac = NULL;
+		_uuid = NULL;
+		_name = NULL;
+		_Da = NULL;
+		
+	}
 	
 }
 
@@ -453,7 +486,7 @@ void parse_auth_dev(unsigned char* data){
 		dev_num[j] = data[i++];
 	}
 */
-
+/*
 	result = select_neighborLista(&row, &col);
 
 	printf("NeighborLista Result Row:%d, Col:%d\n",row,col);
@@ -464,22 +497,38 @@ void parse_auth_dev(unsigned char* data){
 		memcpy(auth[i-1].MAC, result[i*col +1], strlen(result[i*col +1]));
 
 		memcpy(auth[i-1].UUID, result[i*col +2], strlen(result[i*col +2]));
-		/*
-		printf("%s, %s, %s, %s, %s \n",
-				result[i*col],
-				result[i*col + 1],
-				result[i*col + 2],
-				result[i*col + 3],
-				result[i*col + 4]);
-				*/
 		printf("MAC[%d], uuid[%d]\n",strlen(result[i*col+1]), strlen(result[i*col+2]));
 	}
-
+	*/
 	//SEARCH
 	
-	search_sdp_r();
+	//search_sdp_r();
 
-	//register_service();
+	register_service();
+}
+
+void parse_role_socket(unsigned char* data, int socket){
+	int i = 0;
+	int dataLen = -1;
+	unsigned char* tagData = NULL;
+
+	printf("Parse MD Role Socket Init \n");
+
+	if(data[i++] != 0x02) printf("Parse MD Header Error!!!\n");
+	dataLen = data[i++] << 8;
+	dataLen |= data[i++] << 0;
+	
+	if(dataLen < 0) printf("Parse MD DataLen Error!!!\n");
+
+	if(data[i] == 0x07){
+		//tag
+		i++;
+		tagData = (unsigned char*) malloc(dataLen);
+		memcpy(tagData, &data[i], dataLen);
+		checkTag(tagData, dataLen, socket);
+
+		printf("Result Time: %d \n",clock());
+	}
 }
 
 void parse_role(unsigned char* data){

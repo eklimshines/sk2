@@ -30,6 +30,14 @@ CLTSESSION_t l2cap_getsession(void){
     return l2capsession;
 }
 
+void l2cap_send_sock(unsigned char* data, int len, int sock){
+	int status = 0;
+	if(sock>0){
+		status = write(sock, data, len);
+		if(status < 0) printf("L2CAP Send Failed\n");
+		else printf("L2CAP[%d] Send Success\n",sock);
+	}
+}
 void l2cap_send(unsigned char* data, int len){
 	int sock = l2cap_getsock();
 	int status = 0;
@@ -42,7 +50,7 @@ void l2cap_send(unsigned char* data, int len){
 
 CONFIG_t cfg;
 
-int l2cap_connect(int psm){
+int l2cap_connect(int i){
     struct sockaddr_l2 addr = { 0 };
     int s, status;
     char *message = "hello!";
@@ -65,11 +73,13 @@ int l2cap_connect(int psm){
     //addr.l2_psm = htobs(psm);
     //str2ba( cfg.maindevicemac, &addr.l2_bdaddr );
 
-    addr.l2_psm = htobs(auth[psm].psm);
-    str2ba( auth[psm].MAC, &addr.l2_bdaddr );
+    //addr.l2_psm = htobs(auth[i].psm);
+    addr.l2_psm = htobs(i);
+    //str2ba( auth[i].MAC, &addr.l2_bdaddr );
+    str2ba( cfg.maindevicemac, &addr.l2_bdaddr );
 
     //printf("L2CAP MAC:%s %d %d\n", cfg.maindevicemac, psm, addr.l2_psm);
-    printf("L2CAP MAC:%s %d %d\n", auth[psm].MAC, auth[psm].psm, addr.l2_psm);
+    //printf("L2CAP MAC:%s %d %d\n", auth[i].MAC, auth[i].psm, addr.l2_psm);
     // connect to server
     status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
 
@@ -81,8 +91,12 @@ int l2cap_connect(int psm){
 
     if( status < 0 ) perror("uh oh");
 
-    sendEnc(auth[psm].MAC, psm);
-    printf("send Enc %d\n", clock());
+    printf("L2CAP[%d] MAC:%s %d %d\n",s, cfg.maindevicemac, i, addr.l2_psm);
+    //auth[i].socket = s;
+    //sendEnc(auth[i].MAC, i);
+
+    //printf("L2CAP[%d] MAC:%s %d %d\n",auth[i].socket, auth[i].MAC, auth[i].psm, addr.l2_psm);
+    //printf("send Enc[%d] %d\n",i, clock());
     //close(s);
     //
     return s;
@@ -93,24 +107,32 @@ void l2cap_rxthread(void *arg){
 	int result = 0; 
 	char buf[MAXNETBUFSIZE] = {0};
 	int len = 0;
-	int i = 0;
+	//int i = 0;
+	//int i = *(int *)arg;
 	uint32_t timeout = 0;
 	int plen, ptr =0;
 	printf("Create L2CAP Rx Thread\n");
 
 	while(1){
 		sock = l2cap_getsock();
-		if(sock>=0){
-			memset(buf, 0, sizeof(buf));
-			len = read(sock, buf, sizeof(buf));
-			if(len>0){
+		//for(i = 0; i < 8; i++){
+
+			//sock = auth[i].socket;
+			//printf("%d-th sock: %d\n",i, sock);
+			if(sock>0){
+				//printf("%d-th sock: %d\n",i, sock);
+				memset(buf, 0, sizeof(buf));
+				len = read(sock, buf, sizeof(buf));
+				if(len>0){
 				//printf_byte(buf, len);
-				parse_role(buf);
-			} else {
-				usleep(1000); //1ms
+					parse_role(buf);
+					//parse_role_socket(buf, i);
+				}else {
+					usleep(1000); //1ms
+				}
 			}
-		} else {
-		}
+		//printf("1\n");
+		//}
 	}
 	printf("Exit L2CAP Rx Thread\n");
 }
@@ -118,25 +140,31 @@ void l2cap_rxthread(void *arg){
 void* l2cap_session_thread(void *arg){
 	int sock = 0;
 	int result = 0;
-	int psm = *(int *)arg;
+	int i = *(int *)arg;
+	//int i =0;
 	char buf[MAXNETBUFSIZE] = {0};
 	CLTSESSION_t session;
 
 	printf("Create L2cap session Thread \n");
 
 	while(1){
+		//for(i = 0; i < 8; i++){
 		session = l2cap_getsession();
-		switch(session){
-			case SESSION_CLOSE:
-				result = l2cap_connect(psm);
-				if(result > 0){
-					l2cap_setsession(SESSION_CONNECTED);
+			if(auth[i].devId !=0){
+				//session = auth[i].session;
+				switch(session){
+					case SESSION_CLOSE:
+					result = l2cap_connect(i);
+					if(result > 0){
+						l2cap_setsession(SESSION_CONNECTED);
+						//auth[i].session = SESSION_CONNECTED;
+					}
+					break;
+					case SESSION_CONNECTED:
+					break;
 				}
-				break;
-			case SESSION_CONNECTED:
-				break;
-		}
-		
+			}
+		//}
 	}
 }
 
@@ -145,13 +173,15 @@ void* l2cap_thread(void *arg){
 	pthread_t l2cap_rxid;
 	int ret = 0;
 	int err = 0;
-	int psm = *(int *)arg;
+	int i = *(int *)arg;
 
 	printf("Create L2Cap Thread \n");
 
-	err = pthread_create(&l2capid,NULL,l2cap_session_thread,(void *)&psm);
+	err = pthread_create(&l2capid,NULL,l2cap_session_thread,(void *)&i);
+	//err = pthread_create(&l2capid,NULL,l2cap_session_thread, NULL);
 	if(err!=0) printf("Create L2cap session Thread Error[%d]\n",err);
 
+	//err = pthread_create(&l2cap_rxid,NULL,l2cap_rxthread,(void *)&i);
 	err = pthread_create(&l2cap_rxid,NULL,l2cap_rxthread,NULL);
 	if(err!=0) printf("Create l2cap rx Thread Error[%d]\n",err);
 

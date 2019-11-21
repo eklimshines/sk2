@@ -3,12 +3,12 @@
 static element_t Ppub,P1,P2,s,g,Da;
 pairing_t pairing;
 CHECK_t auth[8];
+AUTH_t auth2;
 
 unsigned char* getPpub(int *len);
 
-
 void checkTag(unsigned char* data, int len, int index){
-	int i = 0;
+	int i = 0, j = 0, cnt = 0;
 	int tagLen = 0;
 	int tagDataLen = 0;
 	int myTagLen = 0;
@@ -43,14 +43,24 @@ void checkTag(unsigned char* data, int len, int index){
 	
 	if(memcmp(_tag, myTag, myTagLen) != 0){
 		printf("Auth Failed\n");
-		result = 0;
+		auth[index].result = 1;
 	}
 	else {
 		printf("Auth Success\n");
-		result = 1;
+		auth[index].result = 2;
+		auth2.cnt_authed++;
 	}
 	
-	enc_auth_result(result);
+	if(auth2.cnt_authed == auth2.cnt_auth){
+		enc_auth_result(1);
+	}else{
+		for(j = 0; j < auth2.cnt_neighbor; j++){
+			if(auth[j].result > 0) cnt++;
+		}
+		if(cnt == auth2.cnt_neighbor)
+			enc_auth_result(0);
+	}
+	printf("NOW CHECK[%d] Authed:%d, Auth:%d, Cnt:%d\n",index, auth2.cnt_authed, auth2.cnt_auth, auth2.cnt_neighbor);
 
 	//myTag = HMAC_SHA512(_key, keyLen, data, &myTaglen);	
 }
@@ -77,8 +87,8 @@ void sendTaga(unsigned char* _tag, int tagLen){
 	
 	data[i++] = 0x03;
 
-	//l2cap_send(data, dataLen);
-	blue_send(data, dataLen);
+	l2cap_send(data, dataLen);
+	//blue_send(data, dataLen);
 }
 
 void sendTag(unsigned char* data){
@@ -185,7 +195,7 @@ void sendEnc(char* ID, int index){
 	
 	if(checkMac <= 0){
 		printf("No MAC \n");
-		return NULL;
+		//return NULL;
 	}else printf("MainDevice Send Enc Func\n");
 
 	//_param = getPublicParam(&paramLen);
@@ -223,8 +233,9 @@ void sendEnc(char* ID, int index){
 	data[i++] = 0x03;
 
 	//blue_send(data, dataLen);
+	blue_send_sock(data, dataLen,auth[index].socket);
 
-	l2cap_send(data, dataLen);
+	//l2cap_send_sock(data, dataLen, auth[index].socket);
 	end = clock();
 	printf("The elapse time : %fs\n", (double) (end - start)/CLOCKS_PER_SEC);
 

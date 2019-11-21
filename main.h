@@ -71,15 +71,22 @@ typedef struct _AUTHMIB{
 }AUTHMIB_t;
 
 
+typedef struct _AUTH2{
+	int cnt_neighbor;
+	int cnt_auth;
+	int cnt_authed;
+}AUTH_t;
+
 typedef struct _CHECK{
 	unsigned char MAC[20];
 	unsigned char KEY[128];
 	unsigned char CIPHER[260];
-	unsigned char UUID[40];
+	unsigned char UUID[50];
 	int socket;
 	int devId;
 	int psm;
 	int result;
+	CLTSESSION_t session;
 }CHECK_t;
 
 int aes_encrypt(unsigned char* in, unsigned char* out, int size, unsigned char* key, int KEY_BIT);
@@ -140,10 +147,12 @@ int client_send(uint8_t *data, int lenght);
 int server_tcpsend(uint8_t *data, int lenght);
 
 void parse_role(unsigned char* data);
+void parse_role_socket(unsigned char* data, int socket);
 
 sdp_session_t *register_service();
 int sdp_search(int* psm);
 int _sdp_search(char* mac, char* uuid, int* psm);
+void* t_sdp_search(void *arg);
 void search_sdp_r();
 
 int _str2uuid(const char* uuid_str, uuid_t* uuid);
@@ -165,6 +174,8 @@ void* l2cap_thread(void *arg);
 
 void config_init(CONFIG_t *config);
 
+void blue_send_sock(unsigned char* data, int len, int sock);
+void l2cap_send_sock(unsigned char* data, int len, int sock);
 void l2cap_send(unsigned char* data, int len);
 //void saveParamNeighbor(unsigned char* _P1, unsigned char* _P2, unsigned char* Ppub, unsigned char* _Da);
 void readParamNeighbor();
@@ -179,3 +190,4 @@ extern SKMIB_t skmib;
 
 extern CONFIG_t cfg;
 extern CHECK_t auth[8];
+extern AUTH_t auth2;
